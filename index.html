@@ -907,11 +907,8 @@ em { color: var(--muted); }
     setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
   });
 
-  // Tab switching. The active tab is remembered alongside the edits so a
-  // refresh returns to where the person was.
-  // Stamped with the build so a rebuild returns to the default tab
-  // rather than reopening wherever the last build was left.
-  var TABKEY = KEY + ':tab:' + BUILD;
+  // Tab switching. The page always opens on Audience Demographics —
+  // the last-viewed tab is deliberately NOT remembered between visits.
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
   var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
 
@@ -922,19 +919,19 @@ em { color: var(--muted); }
     panels.forEach(function (p) {
       p.classList.toggle('is-active', p.dataset.tab === name);
     });
-    try { localStorage.setItem(TABKEY, name); } catch (e) {}
   }
 
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { show(t.dataset.tab); });
   });
 
-  var startTab = 'audience';
-  try { startTab = localStorage.getItem(TABKEY) || startTab; } catch (e) {}
-  if (!panels.some(function (p) { return p.dataset.tab === startTab; })) {
-    startTab = 'audience';
-  }
-  show(startTab);
+  // Clear any tab remembered by earlier versions of this page
+  try {
+    Object.keys(localStorage).forEach(function (k) {
+      if (k.indexOf(KEY + ':tab:') === 0) localStorage.removeItem(k);
+    });
+  } catch (e) {}
+  show('audience');
 })();
 </script>
 
