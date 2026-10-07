@@ -123,7 +123,8 @@ em { color: var(--muted); }
   color: var(--muted);
 }
 
-/* Editing affordances — screen only */
+/* Editing affordances — screen only, and only in edit mode (Ctrl/Cmd+Shift+E) */
+body:not(.is-editing) .toolbar { display: none !important; }
 .toolbar {
   position: sticky; top: 0; z-index: 20;
   max-width: 1040px; margin: 0 auto; padding: 10px 0 0;
@@ -812,9 +813,27 @@ em { color: var(--muted); }
   var sheet = document.getElementById('sheet');
   var flag = document.getElementById('savedFlag');
 
-  // Everything inside the sheet is editable except the logos.
-  sheet.setAttribute('contenteditable', 'true');
-  sheet.setAttribute('spellcheck', 'false');
+  // Opens as a normal read-only sheet. Ctrl+Shift+E (Cmd+Shift+E on Mac)
+  // switches editing — and the toolbar — on and off. Never remembered, so
+  // every visit starts read-only.
+  function setEditing(on) {
+    document.body.classList.toggle('is-editing', on);
+    if (on) {
+      sheet.setAttribute('contenteditable', 'true');
+      sheet.setAttribute('spellcheck', 'false');
+    } else {
+      sheet.removeAttribute('contenteditable');
+      sheet.removeAttribute('spellcheck');
+      var sel = window.getSelection();
+      if (sel) { sel.removeAllRanges(); }
+    }
+  }
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+      e.preventDefault();
+      setEditing(!document.body.classList.contains('is-editing'));
+    }
+  });
 
   function lockImages() {
     Array.prototype.forEach.call(sheet.querySelectorAll('img'), function (img) {
@@ -882,6 +901,11 @@ em { color: var(--muted); }
     // would be harmless but noisy.
     var s = clone.querySelector('#sheet');
     if (s) { s.removeAttribute('contenteditable'); s.removeAttribute('spellcheck'); }
+    var cb = clone.querySelector('body');
+    if (cb) {
+      cb.classList.remove('is-editing');
+      if (!cb.getAttribute('class')) cb.removeAttribute('class');
+    }
     var f = clone.querySelector('#savedFlag');
     if (f) { f.classList.remove('show'); }
 
