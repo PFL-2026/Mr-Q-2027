@@ -123,8 +123,9 @@ em { color: var(--muted); }
   color: var(--muted);
 }
 
-/* Editing affordances — screen only, and only in edit mode (Ctrl/Cmd+Shift+E) */
-body:not(.is-editing) .toolbar { display: none !important; }
+/* Editing affordances — screen only. Download PDF is always shown; the
+   editing controls appear only in edit mode (Ctrl/Cmd+Shift+E). */
+body:not(.is-editing) .toolbar .edit-only { display: none !important; }
 .toolbar {
   position: sticky; top: 0; z-index: 20;
   max-width: 1040px; margin: 0 auto; padding: 10px 0 0;
@@ -325,9 +326,9 @@ body:not(.is-editing) .toolbar { display: none !important; }
   .tabs { display: none !important; }
   .chart { break-inside: avoid; }
   .chart figcaption { font-size: 8pt; }
-  /* A PDF should carry the whole document, not just whichever tab is open. */
-  .panel { display: block !important; }
-  .panel + .panel { break-before: page; padding-top: 0; }
+  /* The PDF carries only the tab that is open on screen. */
+  .panel { display: none !important; }
+  .panel.is-active { display: block !important; padding-top: 0; }
   .metric-row, .channel-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .channel-grid-2 { grid-template-columns: repeat(2, 1fr); }
   .metric, .channel, .demo-block { break-inside: avoid; padding: 8px 10px; }
@@ -350,9 +351,9 @@ body:not(.is-editing) .toolbar { display: none !important; }
 <body>
 
 <div class="toolbar no-print">
-  <span class="hint">Click any text to edit · <span class="saved" id="savedFlag">Saved</span></span>
-  <button type="button" id="resetBtn">Reset</button>
-  <button type="button" id="htmlBtn">Download HTML</button>
+  <span class="hint edit-only">Click any text to edit · <span class="saved" id="savedFlag">Saved</span></span>
+  <button type="button" class="edit-only" id="resetBtn">Reset</button>
+  <button type="button" class="edit-only" id="htmlBtn">Download HTML</button>
   <button type="button" class="primary" id="pdfBtn">Download PDF</button>
 </div>
 
@@ -874,9 +875,19 @@ body:not(.is-editing) .toolbar { display: none !important; }
     document.execCommand('insertText', false, text);
   });
 
+  // Prints the open tab only (see print CSS). The document title is set to
+  // the tab name while printing so the saved PDF is named after it.
+  var baseTitle = document.title.split(' — ')[0];
   document.getElementById('pdfBtn').addEventListener('click', function () {
     var sel = window.getSelection();
     if (sel) { sel.removeAllRanges(); }
+    var active = document.querySelector('.tab[aria-selected="true"]');
+    var original = document.title;
+    if (active) { document.title = baseTitle + ' — ' + active.textContent.trim(); }
+    window.addEventListener('afterprint', function restore() {
+      document.title = original;
+      window.removeEventListener('afterprint', restore);
+    });
     window.print();
   });
 
